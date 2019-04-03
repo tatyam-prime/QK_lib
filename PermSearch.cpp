@@ -106,7 +106,7 @@ void PermSearch(array<int, 14> cards, int k = 1){
         if(used.count(top)) continue; // 重複
         used.insert(top);
         if(!top.n){
-            if(miller_rabin_test(cpp_int(top.s), 30)){
+            if(miller_rabin_test(cpp_int(top.s), 30)){ // 素数判定
                 cout << top.s << endl;
                 if(!--k) return;
             }
