@@ -103,7 +103,7 @@ void PermSearch(array<int, 14> cards, int k = 1){
             q.push(top.change(i));
             break;
         }
-        if(used.count(top)) continue;
+        if(used.count(top)) continue; // 重複
         used.insert(top);
         if(!top.n){
             if(miller_rabin_test(cpp_int(top.s), 30)){
