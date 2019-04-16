@@ -127,3 +127,8 @@ void PermSearch(array<int, 14> cards, int k = 1){
         }
     }
 }
+const vector<vector<int>> cnt = {{0}, {10, 5}, {20, 10, 5}, {30, 15, 10, 5}, {40, 20, 10, 10, 5}}; //paramater
+const vector<char> to_c = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K'};
+int main(){
+    
+}
