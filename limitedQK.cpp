@@ -81,7 +81,7 @@ void PermSearch(array<int, 14> cards, int k = 1){
         for(int i = 0; i < 14; i++) sum += cards[i] * i;
         if(sum % 3 == 0) return;
     }
-    const function<uint32_t(SearchState)> hasher = [](const SearchState &a){
+    const auto hasher = [](const SearchState &a){
         string s = a.s;
         for(auto &i: a.cards) s += char(i);
         return hash<string>()(s);
