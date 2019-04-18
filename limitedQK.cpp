@@ -1,9 +1,4 @@
-#include <iostream>
-#include <numeric>
-#include <array>
-#include <string>
-#include <queue>
-#include <unordered_set>
+#include <bits/stdc++.h>
 #include <boost/multiprecision/miller_rabin.hpp>
 using namespace std;
 using namespace boost::multiprecision;
@@ -14,6 +9,7 @@ const array<string, 14> to_s = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
 struct SearchState{
     array<int, 14> cards;
     string s = "";
+    vector<int> perm;
     int n, last, last2, oned, odd, eleven = 0;
     SearchState(array<int, 14> _cards) : cards(_cards){
         last = last2 = -1;
@@ -27,6 +23,7 @@ struct SearchState{
         ans.cards[a]--;
         ans.n--;
         ans.s += to_s[a];
+        ans.perm.push_back(a);
         ans.last = a;
         ans.last2 = last;
         if(a > 9) ans.eleven = (ans.eleven + a) % 11;
@@ -52,6 +49,7 @@ struct SearchState{
         if(last & 1 && last != 5) ans.odd++;
         ans.cards[a]--;
         ans.s += to_s[a];
+        ans.perm.back() = a;
         ans.last = a;
         if(a > 9) ans.eleven = (ans.eleven + a) % 11;
         else{
