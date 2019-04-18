@@ -11,6 +11,7 @@ struct SearchState{
     string s = "";
     vector<int> perm;
     int n, last, last2, oned, odd, eleven = 0;
+    SearchState(){}
     SearchState(array<int, 14> _cards) : cards(_cards){
         last = last2 = -1;
         oned = accumulate(cards.begin(), cards.begin() + 10 , 0);
@@ -73,11 +74,11 @@ struct SearchState{
         return s == rhs.s && cards == rhs.cards;
     }
 };
-void PermSearch(array<int, 14> cards, int k = 1){
+pair<bool, SearchState> PermSearch(array<int, 14> cards, int k = 1){
     if(accumulate(cards.begin(), cards.end(), 0) > 1){ // 3の倍数は素数にならない
         int sum = 0;
         for(int i = 0; i < 14; i++) sum += cards[i] * i;
-        if(sum % 3 == 0) return;
+        if(sum % 3 == 0) return {0, {}};
     }
     const auto hasher = [](const SearchState &a){
         string s = a.s;
@@ -105,8 +106,7 @@ void PermSearch(array<int, 14> cards, int k = 1){
         used.insert(top);
         if(!top.n){
             if(miller_rabin_test(cpp_int(top.s), 30)){ // 素数判定
-                cout << top.s << endl;
-                if(!--k) return;
+                return {1, top};
             }
             continue;
         }
@@ -124,9 +124,35 @@ void PermSearch(array<int, 14> cards, int k = 1){
             break;
         }
     }
+    return {0, {}};
 }
-const vector<vector<int>> cnt = {{0}, {10, 5}, {20, 10, 5}, {30, 15, 10, 5}, {40, 20, 10, 10, 5}}; //paramater
+
+vector<vector<int>> cnt = {{0}, {10, 5}, {20, 10, 5}, {30, 15, 10, 5}, {40, 20, 10, 10, 5}}; //パラメータ
 const vector<char> to_c = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K'};
 int main(){
-    
+    random_device rr;
+    mt19937 rand(rr());
+    vector<set<pair<cpp_int, vector<int>>>> ans(5);
+    for(int i = 1; i < 5; i++) for(int c2 = 0; c2 <= i; c2++){
+        int fail = 100;
+        int c1 = i - c2;
+        while(fail && cnt[i][c2]){
+            fail--;
+            array<int, 14> cards;
+            cards.fill(0);
+            for(int i = 0; i < c1; i++) cards[rand() % 9 + 1]++;
+            for(int i = 0; i < c2; i++) cards[rand() % 4 + 10]++;
+            auto a = PermSearch(cards);
+            if(a.first && ans[i].insert({cpp_int(a.second.s), a.second.perm}).second){
+                fail = 10;
+                cnt[i][c2]--;
+            }
+        }
+    }
+    for(auto &i : ans) for(auto &j : i){
+        for(auto &k : j.second) cout << to_c[k];
+        cout << endl;
+    }
 }
+
+
