@@ -9,122 +9,138 @@ using namespace std;
 using namespace boost::multiprecision;
 
 
-const array<int, 14> nxt = {-1, 13, 1, 2, 3, 4, 5, 6, 7, 8, 0, 10, 11, 12};
+
 const array<string, 14> to_s = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"};
+
 struct SearchState{
+    int n, eleven = 0, oned, last = 0;
     array<int, 14> cards;
-    string s = "";
-    int n, last, last2, oned, odd, eleven = 0;
-    SearchState(array<int, 14> _cards) : cards(_cards){
-        last = last2 = -1;
-        oned = accumulate(cards.begin(), cards.begin() + 10 , 0);
-        n = accumulate(cards.begin() + 10 , cards.end(), oned);
-        odd = -cards[5];
-        for(int i = 1; i < 14; i += 2) odd += cards[i];
-    }
-    SearchState add(int a){
-        auto ans = *this;
-        ans.cards[a]--;
-        ans.n--;
-        ans.s += to_s[a];
-        ans.last = a;
-        ans.last2 = last;
-        if(a > 9) ans.eleven = (ans.eleven + a) % 11;
+    string s;
+    vector<int> v;
+    SearchState(array<int, 14> cards) : n(accumulate(cards.begin(), cards.end(), 0)), oned(accumulate(cards.begin(), cards.begin() + 10, 0)), cards(cards){}
+    void add(int a){
+        n--;
+        cards[a]--;
+        s += to_s[a];
+        v.push_back(a);
+        if(a > 9)eleven += a;
         else{
-            ans.oned--;
-            ans.eleven = (a - ans.eleven + 11) % 11;
+            eleven = a - eleven;
+            oned--;
         }
-        if(a & 1 && a != 5) ans.odd--;
-        return ans;
     }
-    SearchState change(int a){
-        auto ans = *this;
-        ans.cards[last]++;
-        ans.s.pop_back();
-        if(last > 9){
-            ans.s.pop_back();
-            ans.eleven = (ans.eleven - last + 11) % 11;
+    void prev(){
+        int a = v.back();
+        n++;
+        cards[a]++;
+        s.pop_back();
+        v.pop_back();
+        if(a > 9){
+            eleven -= a;
+            s.pop_back();
         }
         else{
-            ans.oned++;
-            ans.eleven = (last - ans.eleven + 11) % 11;
+            eleven = a - eleven;
+            oned++;
         }
-        if(last & 1 && last != 5) ans.odd++;
-        ans.cards[a]--;
-        ans.s += to_s[a];
-        ans.last = a;
-        if(a > 9) ans.eleven = (ans.eleven + a) % 11;
-        else{
-            ans.oned--;
-            ans.eleven = (a - ans.eleven + 11) % 11;
-        }
-        if(a & 1 && a != 5) ans.odd--;
-        return ans;
     }
-    bool operator < (const SearchState &rhs) const {
+    const bool operator <(const SearchState &rhs) const noexcept {
         auto a = s.begin(), b = rhs.s.begin();
-        while(1){
-            if(b == rhs.s.end()) return 1;
-            if(a == s.end()) return 0;
+        while(true){
+            if(a == s.end()) return false;
+            if(b == rhs.s.end()) return true;
             if(*a != *b) return *a < *b;
-            a++;
-            b++;
+            a++; b++;
         }
-    }
-    bool operator == (const SearchState &rhs) const {
-        return s == rhs.s && cards == rhs.cards;
     }
 };
+
 void PermSearch(array<int, 14> cards, int k = 1){
-    if(accumulate(cards.begin(), cards.end(), 0) > 1){ // 3の倍数は素数にならない
-        int sum = 0;
-        for(int i = 0; i < 14; i++) sum += cards[i] * i;
-        if(sum % 3 == 0) return;
+    if(!k)return;
+    int n = accumulate(cards.begin(), cards.end(), 0);
+    if(n == 1){
+        for(int i = 0; i < 14; i++) if(cards[i]) {
+            if(miller_rabin_test(i, 10)) cout << i << endl;
+            return;
+        }
     }
-    const auto hasher = [](const SearchState &a){
-        string s = a.s;
-        for(auto &i: a.cards) s += char(i);
-        return hash<string>()(s);
+    int sum = 0;
+    for(int i = 0; i < 14; i++) sum += i * cards[i];
+    if(sum % 3 == 0) return;
+    if(n == accumulate(cards.begin() + 10, cards.end(), 0) && sum % 11 == 0) return;
+    const auto hash = [](pair<array<int, 14>, vector<int>> a){
+        unsigned ans = 0;
+        for(auto &i : a.first) ans = ans * 10007 + i;
+        for(auto &i : a.second) ans = ans * 10007 + i;
+        return ans;
     };
-    unordered_set<SearchState, function<uint32_t(SearchState)>> used(1 << 12, hasher);
+    unordered_set<pair<array<int, 14>, vector<int>>, decltype(hash)> checked({}, hash);
     priority_queue<SearchState> q;
-    for(int i = 9; i >= 0; i = nxt[i]) if(cards[i]) {
-        q.push(SearchState(cards).add(i));
-        break;
-    }
+    q.push(cards);
+    const auto isValid = [&checked](const SearchState &a) -> bool{
+        if(a.n == 0) return checked.insert({a.cards, a.v}).second;
+        if(a.oned == 0){
+            int eleven = a.eleven;
+            for(int i = 10; i < 14; i++) eleven += a.cards[i] * i;
+            if(eleven % 11 == 0) return false;
+        }
+        if(!(a.cards[1] || a.cards[3] || a.cards[7] || a.cards[9] || a.cards[11] || a.cards[13])) return false;
+        if(a.v.size() > 1 && a.v[a.v.size() - 2] == 1){
+            if(a.v.back() == 11) return false;
+            if(a.v.back() < 4 && a.cards[a.v.back() + 10]) return false;
+        }
+        return checked.insert({a.cards, a.v}).second;
+    };
+    const auto push_next = [&q, &isValid](SearchState a) -> void{
+        const array<int, 14> next = {-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 10, 11, 12};
+        int i = 9;
+        while(true){
+            for(; i != -1; i = next[i]){
+                if(i == 1){
+                    bool flag = 0;
+                    for(int i = 13; i > 9; i--) if(a.cards[i]){
+                        a.add(i);
+                        if(isValid(a)){
+                            q.push(a);
+                            flag = 1;
+                            a.prev();
+                            break;
+                        }
+                        a.prev();
+                    }
+                    if(a.cards[1]){
+                        a.add(1);
+                        if(isValid(a)){
+                            if(flag) a.last = a.v.size();
+                            q.push(a);
+                            flag = 1;
+                        }
+                    }
+                    if(flag) return;
+                }
+                else if(a.cards[i]){
+                    a.add(i);
+                    if(isValid(a)){
+                        q.push(a);
+                        return;
+                    }
+                    a.prev();
+                }
+            }
+            if(a.v.empty()) return;
+            i = next[a.v.back()];
+            a.prev();
+            if(a.v.size() < a.last) return;
+        }
+    };
     while(q.size()){
-        auto top = q.top();
+        auto &a = q.top();
+        push_next(a);
+        if(a.n == 0 && miller_rabin_test(cpp_int(a.s), 50)){
+            cout << a.s << endl;
+            if(!--k) return;
+        }
         q.pop();
-        for(int i = nxt[top.last]; i >= 0; i = nxt[i]) if(top.cards[i]){ // 最後を変更する
-            if(top.last2 == 1) {
-                if(i < 4 && top.cards[10 + i]) continue; // TJQKがあるなら1の後に0123はダメ
-                if(i == 11) continue; // 1の後にJはダメ
-            }
-            q.push(top.change(i));
-            break;
-        }
-        if(used.count(top)) continue; // 重複
-        used.insert(top);
-        if(!top.n){
-            if(miller_rabin_test(cpp_int(top.s), 30)){ // 素数判定
-                cout << top.s << endl;
-                if(!--k) return;
-            }
-            continue;
-        }
-        if(!top.oned){
-            if((top.eleven - top.cards[10] + top.cards[12] + top.cards[13] + top.cards[13]) % 11 == 0) continue; // 11の倍数
-            top.oned = 1;
-        }
-        if(!top.odd) continue; // 2/5の倍数
-        for(int i = 9; i >= 0; i = nxt[i]) if(top.cards[i]){ // 1つ繋げる
-            if(top.last == 1) {
-                if(i < 4 && top.cards[10 + i]) continue; // TJQKがあるなら1の後に0123はダメ
-                if(i == 11) continue; // 1の後にJはダメ
-            }
-            q.push(top.add(i));
-            break;
-        }
     }
 }
 
