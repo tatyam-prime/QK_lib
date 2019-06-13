@@ -29,7 +29,7 @@ bool suspect(uint a, uint s, u64 d, u64 n){
 bool miller_rabin(u64 n){
     if(n <= 1) return false;
     const vector<uint> test = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29}; // n < 2^64 なら十分
-    if(n <= 109){
+    if(n <= 29){
         for(uint i : test) if(n == i) return true;
         return false;
     }
