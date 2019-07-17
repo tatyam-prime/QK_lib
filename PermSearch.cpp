@@ -171,3 +171,100 @@ int main(){
     PermSearch(cards);
     // 999988887777666655554444333322221313131313121212121211111111101110110101
 }
+
+
+
+/**********    新バージョン   *************/
+
+
+#include <iostream>
+#include <array>
+#include <unordered_map>
+#include <vector>
+#include <boost/multiprecision/miller_rabin.hpp>
+
+
+namespace std {
+    template <>
+    struct hash<std::array<int, 14>> {
+        size_t operator()(const std::array<int, 14>& key) const {
+            size_t x = 88172645463325252;
+            for(int i : key) {
+                x ^= i;
+                x ^= (x << 13);
+                x ^= (x >> 7);
+                x ^= (x << 17);
+            }
+            return x;
+        }
+    };
+}
+
+struct IntInit {
+    int x = 14;
+    IntInit() {}
+    IntInit(int x): x(x) {}
+    operator int() const { return x; }
+};
+
+struct DFSTree {
+    using Array = std::array<int, 14>;
+    using BigInt = boost::multiprecision::cpp_int;
+    DFSTree* child[10] = {};
+    BigInt num;
+    int n, eleven;
+    std::unordered_map<Array, IntInit> cards;
+    DFSTree(BigInt num = 0): num(num) {}
+    void destruct() { for(DFSTree* i : child) { delete i; } }
+    DFSTree& at(int x) {
+        if(child[x] == nullptr) {
+            child[x] = new DFSTree(num * 10 + x);
+            child[x]->n = n - 1;
+            child[x]->eleven = x - eleven;
+        }
+        return *child[x];
+    }
+    bool is_valid(const Array& s, int x) {
+        if(n == 0) return eleven % 11;
+        if(x % 2 && x != 5) if(!s[1] && !s[3] && !s[7] && !s[9] && !s[11] && !s[13]) return false;
+        if(x < 10) if(!s[0] && !s[1] && !s[2] && !s[3] && !s[4] && !s[5] && !s[6] && !s[7] && !s[8] && !s[9])
+            if((eleven - s[10] + s[12] + s[13] * 2) % 11 == 0) return false;
+        return true;
+    }
+    void insert(const Array& s, int x) {
+        Array t = s;
+        t[x]--;
+        DFSTree& next = x < 10 ? at(x) : at(1).at(x - 10);
+        if(next.is_valid(t, x)) next.cards[t] = std::min(next.cards[t].x, x);
+    }
+    void search(std::vector<BigInt>& ans, int cnt = 1) {
+        if(n == 0) {
+            if(cards.size() && boost::multiprecision::miller_rabin_test(num, 50)) ans.push_back(num);
+            return;
+        }
+        for(auto& i : cards) {
+            if(i.second == 1) {
+                for(int j = 0; j < 4; j++) if(i.first[j] && !i.first[j + 10]) insert(i.first, j);
+                for(int j = 4; j < 11; j++) if(i.first[j]) insert(i.first, j);
+                for(int j = 12; j < 14; j++) if(i.first[j]) insert(i.first, j);
+            }
+            else {
+                for(int j = 0; j < 14; j++) if(i.first[j]) insert(i.first, j);
+            }
+        }
+        for(int i = 9; i >= 0; i--) if(child[i] != nullptr) {
+            if(ans.size() != cnt) child[i]->search(ans, cnt);
+            child[i]->destruct();
+        }
+    }
+};
+std::vector<boost::multiprecision::cpp_int> PermSearch(std::array<int, 14> cards, int n = 1) {
+    DFSTree a;
+    a.cards[cards] = 0;
+    a.n = 0;
+    for(int i = 0; i < 10; i++) a.n += cards[i];
+    for(int i = 10; i < 14; i++) a.n += cards[i] * 2;
+    std::vector<boost::multiprecision::cpp_int> ans;
+    a.search(ans, n);
+    return ans;
+}
