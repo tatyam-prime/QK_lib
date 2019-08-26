@@ -14,7 +14,7 @@ def suspect(a, s, d, n):
  
         x = x * x % n
  
-    return False;
+    return False
  
 def is_prime(n):
  
