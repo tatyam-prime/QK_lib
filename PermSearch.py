@@ -53,13 +53,13 @@ class DFSTree:
     def insert(self, s, x): # s : 残っているカード, x: 次に使うカード
         t = list(s)
         t[x] -= 1
-        next = self.at(x) if x < 10 else self.at(1).at(x - 10)
-        if next.is_valid(t, x):
+        nxt = self.at(x) if x < 10 else self.at(1).at(x - 10)
+        if nxt.is_valid(t, x):
             t = tuple(t)
-            if t not in next.cards:
-                next.cards[t] = 14
-            if next.cards[t] > x:
-                next.cards[t] = x
+            if t not in nxt.cards:
+                nxt.cards[t] = 14
+            if nxt.cards[t] > x:
+                nxt.cards[t] = x
     def search(self, ans, cnt = 1): # ans : 0~Kの枚数の配列, cnt : 何個探すか(-1で全部)
         if self.n == 0:
             if self.cards and miller_rabin_test(self.num):
