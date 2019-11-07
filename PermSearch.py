@@ -26,10 +26,6 @@ def miller_rabin_test(n):
             return False
     return True
 
-class IntInit:
-    def __init__(self, x = 14):
-        self.x = x
-
 class DFSTree:
     def __init__(self, num = 0):
         self.child = [None] * 10
@@ -37,15 +33,13 @@ class DFSTree:
         self.n = 0
         self.eleven = 0
         self.cards = dict()
-    def destruct(self):
-        self.child.clear()
-    def at(self, x): # -> DFSTree
+    def at(self, x): # 1桁進める
         if self.child[x] == None:
             self.child[x] = DFSTree(self.num * 10 + x)
             self.child[x].n = self.n - 1
             self.child[x].eleven = x - self.eleven
         return self.child[x]
-    def is_valid(self, s, x): # -> Bool
+    def is_valid(self, s, x): # 2, 5, 11 の倍数チェック
         if self.n == 0:
             return self.eleven % 11
         if x % 2 and x != 5:
@@ -56,7 +50,7 @@ class DFSTree:
                 if (self.eleven - s[10] + s[12] + s[13] * 2) % 11 == 0:
                     return False
         return True
-    def insert(self, s, x):
+    def insert(self, s, x): # s : 残っているカード, x: 次に使うカード
         t = list(s)
         t[x] -= 1
         next = self.at(x) if x < 10 else self.at(1).at(x - 10)
@@ -66,7 +60,7 @@ class DFSTree:
                 next.cards[t] = 14
             if next.cards[t] > x:
                 next.cards[t] = x
-    def search(self, ans, cnt = 1):
+    def search(self, ans, cnt = 1): # ans : 0~Kの枚数の配列, cnt : 何個探すか(-1で全部)
         if self.n == 0:
             if self.cards and miller_rabin_test(self.num):
                 ans.append(self.num)
@@ -90,7 +84,7 @@ class DFSTree:
             if self.child[i] != None:
                 if len(ans) != cnt:
                     self.child[i].search(ans, cnt)
-                self.child[i].destruct()
+                self.child[i] = None # destruct
 
 def PermSearch(hand, n = 1):  # -> list<Int>
     if len(hand) > 1 and sum(hand) % 3 == 0:
